@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="fa">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>افزودن توکن به TronLink — Add TRC20</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;padding:20px;direction:rtl}
+    .card{max-width:820px;margin:0 auto;background:#fafafa;border-radius:8px;padding:18px;box-shadow:0 4px 18px rgba(0,0,0,.06)}
+    pre{background:#111;color:#0f0;padding:12px;border-radius:6px;overflow:auto}
+    img.logo{width:120px;height:120px;object-fit:contain;border-radius:12px}
+    .cols{display:flex;gap:18px;align-items:center}
+    button{padding:10px 14px;border-radius:8px;border:0;background:#2563eb;color:white;cursor:pointer}
+    .muted{color:#666;font-size:14px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>افزودن توکن به TronLink (پیشرفته)</h2>
+    <p class="muted">این صفحه چند راه را به‌صورت هوشمند امتحان می‌کند تا توکن TRC20 شما همراه با لوگو در کیف TronLink (در صورتی که کیف از آن پشتیبانی کند) اضافه و نمایش داده شود. اگر افزودن خودکار مقدور نباشد، راهنمای دقیقِ دستی هم در پایین هست.</p>
+
+    <div class="cols">
+      <img class="logo" id="tokenLogo" src="https://raw.githubusercontent.com/hoater6-hue/my-first-project/Tether_USDT_256x256.png/Tether_USDT_256x256%20(4).png" alt="logo">
+      <div>
+        <p><b>آدرس کانترکت:</b> <span id="addr">TPHjxcwuDiAJtnySMo99ou7Rbqo8cqVhsh</span></p>
+        <p><b>نماد:</b> USDT &nbsp; <b>Decimals:</b> 6</p>
+        <div style="margin-top:8px"><button id="autoAdd">تلاش برای افزودن خودکار</button> <button id="copy">کپی آدرس</button></div>
+      </div>
+    </div>
+
+    <hr>
+    <h3>گزارش وضعیت (لاگ)</h3>
+    <pre id="log">آماده...
+</pre>
+
+    <hr>
+    <h3>دستورالعمل دستی (اگر خودکار کار نکرد)</h3>
+    <ol>
+      <li>کیف TronLink را باز کن و به بخش "Tokens" برو.</li>
+      <li>گزینه "Add Custom Token" را انتخاب کن.</li>
+      <li>آدرس قرارداد را پیست کن: <code>TPHjxcwuDiAJtnySMo99ou7Rbqo8cqVhsh</code></li>
+      <li>Symbol = USDT ، Decimals = 6 و در قسمت لوگو (در صورت وجود) لینک زیر را وارد کن یا لوگو را آپلود کن:
+        <div><a href="https://raw.githubusercontent.com/hoater6-hue/my-first-project/Tether_USDT_256x256.png/Tether_USDT_256x256%20(4).png" target="_blank">لینک لوگو (کلیک برای باز کردن)</a></div>
+      </li>
+    </ol>
+
+    <hr>
+    <h3>توضیحات فنی (خلاصه)</h3>
+    <p class="muted">ما به ترتیب روش‌های زیر را امتحان می‌کنیم: اتصال به window.tronWeb/tronLink، ارسال درخواست‌های شناخته‌شده (wallet_watchAsset برای کیف‌های EVM-like که ممکن است پشتیبانی کنند)، و در نهایت راهنمای دستی. نتیجه در لاگ نمایش داده می‌شود.</p>
+  </div>
+
+  <script>
+    const token = {
+      address: 'TPHjxcwuDiAJtnySMo99ou7Rbqo8cqVhsh',
+      symbol: 'USDT',
+      decimals: 6,
+      image: 'https://raw.githubusercontent.com/hoater6-hue/my-first-project/Tether_USDT_256x256.png/Tether_USDT_256x256%20(4).png'
+    };
+
+    const logEl = document.getElementById('log');
+    function log(s){ logEl.textContent += '\n' + s; logEl.scrollTop = logEl.scrollHeight; }
+
+    document.getElementById('copy').onclick = async () => {
+      try{ await navigator.clipboard.writeText(token.address); alert('آدرس کپی شد'); }catch(e){ alert('کپی ناموفق: ' + e.message); }
+    };
+
+    document.getElementById('autoAdd').onclick = async () => {
+      log('شروع تلاش افزودن خودکار...');
+
+      // 1) Try EVM-style wallet_watchAsset (some wallets inject this)
+      if (window.ethereum && window.ethereum.request) {
+        log('window.ethereum دیده شد — تلاش برای wallet_watchAsset');
+        try {
+          const ok = await window.ethereum.request({
+            method: 'wallet_watchAsset',
+            params: {
+              type: 'ERC20',
+              options: {
+                address: token.address,
+                symbol: token.symbol,
+                decimals: token.decimals,
+                image: token.image
+              }
+            }
+          });
+          log('wallet_watchAsset پاسخ داد: ' + String(ok));
+          if (ok) { alert('کیف درخواست را پذیرفت (اگر پشتیبانی می‌شد)'); return; }
+        } catch(e){ log('wallet_watchAsset خطا: ' + e.message); }
+      } else {
+        log('window.ethereum موجود نیست.');
+      }
+
+      // 2) Try TronLink/tronWeb patterns (best-effort)
+      if (window.tronWeb || window.tronLink) {
+        log('window.tronWeb/tronLink یافت شد — تلاش برای روش‌های مخصوص Tron');
+        try {
+          // Some TronLink versions expose a request method — try common method names (best-effort)
+          const provider = window.tronLink || window.tronWeb && window.tronWeb.tron;
+          if (provider && provider.request) {
+            log('provider.request موجود است، تلاش برای ارسال درخواست غیررسمی addToken');
+            try {
+              // try a non-standard custom request (many wallets ignore unknown methods)
+              const res = await provider.request({ method: 'wallet_addToken', params: { address: token.address, symbol: token.symbol, decimals: token.decimals, image: token.image } });
+              log('wallet_addToken پاسخ: ' + JSON.stringify(res));
+              alert('درخواست ارسال شد — بررسی کن آیا کیف پیامی نمایش داد');
+              return;
+            } catch(err){ log('wallet_addToken خطا/پاسخ منفی: ' + err.message); }
+          }
+
+          // Fallback: attempt to read balance to trigger a permission prompt (some wallets then track token)
+          if (window.tronWeb && window.tronWeb.contract) {
+            log('تلاش برای فراخوانی balanceOf برای تحریک درخواست دسترسی');
+            try {
+              const contract = await window.tronWeb.contract().at(token.address);
+              // balanceOf requires an address param — try default address
+              const user = (window.tronWeb.defaultAddress && (window.tronWeb.defaultAddress.base58 || window.tronWeb.defaultAddress['base58'])) || (window.tronWeb.defaultAddress && window.tronWeb.defaultAddress.base58);
+              log('آدرس کاربر در tronWeb: ' + String(user));
+              if (user) {
+                const bal = await contract.balanceOf(user).call();
+                log('balanceOf خوانده شد: ' + String(bal));
+                alert('فانکشن balanceOf اجرا شد؛ حالا کیف را بررسی کن که آیا توکن را نشان می‌دهد.');
+                return;
+              } else {
+                log('آدرس پیش‌فرض کاربر یافت نشد.');
+              }
+            } catch(e){ log('خطا در فراخوانی قرارداد: ' + e.message); }
+          }
+        } catch(e){ log('خطای کلی Tron تلاش: ' + e.message); }
+      } else {
+        log('هیچ تزریق Tron پیدا نشد (window.tronWeb/tronLink موجود نیست).');
+      }
+
+      // 3) Final fallback: show manual instructions and copy
+      try{ await navigator.clipboard.writeText(token.address); log('آدرس به clipboard کپی شد (فقط در صورتی که اجازه اتصال به کلیپ‌بورد داشته باشید).'); }catch(e){ log('کپی به clipboard ممکن نشد.'); }
+      alert('خودکار نشد؛ دستورالعمل دستی در صفحه را دنبال کن.');
+    };
+
+    // On load, detect environment
+    (function detect(){
+      if (window.tronWeb) log('tronWeb نسخه‌ی موجود');
+      if (window.tronLink) log('tronLink provider موجود');
+      if (navigator.userAgent && /TronLink|tronlink/i.test(navigator.userAgent)) log('به نظر می‌رسد این صفحه در مرورگر درونِ TronLink اجرا می‌شود (userAgent match)');
+    })();
+  </script>
+</body>
+</html>

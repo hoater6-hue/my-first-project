@@ -1,1 +1,17 @@
 tronlist.json
+{
+  "name": "My Token List",
+  "logoURI": "https://raw.githubusercontent.com/hoater6-hue/my-first-project/refs/heads/Tether_USDT_256x256.png/Tether_USDT_256x256%20(4).png",
+  "keywords": ["tron"],
+  "version": { "major": 1, "minor": 0, "patch": 0 },
+  "tokens": [
+    {
+      "chainId": 728126428,
+      "address": "TPHjxcwuDiAJtnySMo99ou7Rbqo8cqVhsh",
+      "name": "Tether USD",
+      "symbol": "USDT",
+      "decimals": 6,
+      "logoURI": "https://raw.githubusercontent.com/hoater6-hue/my-first-project/refs/heads/Tether_USDT_256x256.png/Tether_USDT_256x256%20(4).png"
+    }
+  ]
+}

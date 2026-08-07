@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>My Token — Info</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; background:#0b1220; color:#e6f7ff; margin:0; padding:24px; }
+    .card{max-width:720px;margin:0 auto;padding:18px;background:#071426;border-radius:10px;}
+    img.logo{width:128px;height:128px;border-radius:14px;border:1px solid rgba(255,255,255,0.06)}
+    .row{display:flex;gap:16px;align-items:center}
+    .meta{margin-top:12px}
+    pre{background:#001522;padding:12px;border-radius:8px;overflow:auto;color:#bfefff}
+    a { color:#7feaff }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1 id="token-name">Token</h1>
+    <div class="row">
+      <img id="token-logo" class="logo" src="" alt="logo" />
+      <div>
+        <div><strong id="token-symbol">SYMBOL</strong></div>
+        <div id="token-contract" style="font-family:monospace;color:#9aa7b2"></div>
+        <div id="token-network" style="color:#9aa7b2"></div>
+      </div>
+    </div>
+
+    <div class="meta">
+      <h3>Metadata</h3>
+      <pre id="meta-json">Loading...</pre>
+    </div>
+  </div>
+
+  <script>
+    async function loadToken() {
+      try {
+        const resp = await fetch('/api/token');
+        const data = await resp.json();
+        document.getElementById('token-name').textContent = data.name || 'Unnamed';
+        document.getElementById('token-symbol').textContent = data.symbol ? (data.symbol + ' · ' + (data.decimals || '') + ' decimals') : '';
+        document.getElementById('token-contract').textContent = data.contract || '';
+        document.getElementById('token-network').textContent = data.network || '';
+        const logo = data.logo || '';
+        if (logo) {
+          document.getElementById('token-logo').src = logo;
+        } else {
+          document.getElementById('token-logo').style.display = 'none';
+        }
+        document.getElementById('meta-json').textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        document.getElementById('meta-json').textContent = 'Failed to fetch token data';
+        console.error(err);
+      }
+    }
+    loadToken();
+  </script>
+</body>
+</html>
